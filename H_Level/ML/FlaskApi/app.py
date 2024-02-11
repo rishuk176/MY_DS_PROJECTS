@@ -27,36 +27,41 @@ def home():
 
 @app.route('/predict',methods=["Get","POST"])
 def predict():
-    uploaded_file = request.files['file']
-    df = pd.read_csv(uploaded_file)
-    df_tranformed = data_validation(df)
-    os.chdir("/data1")
-
+    try:
+        uploaded_file = request.files['file']
+        df = pd.read_csv(uploaded_file)
+        df_tranformed = data_validation(df)
+        os.chdir("/data1")
     
-    mlflow.set_tracking_uri("...")
-#   I have removed URI for privacy concerns.
-
-    experiment_name = "Book_Impact_Prediction_1"
-
-    runs = mlflow.search_runs(experiment_ids=mlflow.get_experiment_by_name(experiment_name).experiment_id)
-
-    runs = runs.sort_values(['metrics.Mean Absolute Percentage Error'], ascending = [False]).reset_index().drop(['index'], axis = 1)
-
-    best_run = runs.loc[runs["metrics.Mean Absolute Percentage Error"].idxmax()]
-
-    best_model = mlflow.pyfunc.load_model(best_run.artifact_uri + "/model")
-
-    predicted = best_model.predict(df_tranformed)
-
-    with open('/data1/notebooks/H_Level/ML/Scaler Pickle/scaler.pkl', 'rb') as f:
-        loaded_scaler = pickle.load(f)
-
-    # Use the loaded scaler to transform data
-    predicted = loaded_scaler.inverse_transform(pd.DataFrame(predicted))
-
-    df['Book_Impact'] = pd.DataFrame(predicted)
+        
+        mlflow.set_tracking_uri("...")
+#       I have removed URI for privacy concerns.
     
-    return df.to_json(orient="split")
+        experiment_name = "Book_Impact_Prediction_1"
+    
+        runs = mlflow.search_runs(experiment_ids=mlflow.get_experiment_by_name(experiment_name).experiment_id)
+    
+        runs = runs.sort_values(['metrics.Mean Absolute Percentage Error'], ascending = [False]).reset_index().drop(['index'], axis = 1)
+    
+        best_run = runs.loc[runs["metrics.Mean Absolute Percentage Error"].idxmax()]
+    
+        best_model = mlflow.pyfunc.load_model(best_run.artifact_uri + "/model")
+    
+        predicted = best_model.predict(df_tranformed)
+    
+        with open('/data1/notebooks/H_Level/ML/Scaler Pickle/scaler.pkl', 'rb') as f:
+            loaded_scaler = pickle.load(f)
+    
+        # Use the loaded scaler to transform data
+        predicted = loaded_scaler.inverse_transform(pd.DataFrame(predicted))
+    
+        df['Book_Impact'] = pd.DataFrame(predicted)
+        
+        return df.to_json(orient="split")
+        
+    except Exception as e:
+        print(e)
+        print("Opps, seems like a error, Please upload the file again.")
 
 def data_validation(df):
     
